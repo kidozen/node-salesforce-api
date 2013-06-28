@@ -1,0 +1,35 @@
+{
+    "name": "salesforce-api",
+    "version": "0.0.1",
+    "description": "Module to invoke salesforce.com services",
+    "author": "Kidozen <support@kidozen.com>",
+    "contributors": [ 
+        {
+        "name": "Silvio Massari",
+        "email": "silvio@kidozen.com"
+        } 
+    ],
+    "main": "index.js",
+    "scripts": {
+        "test": "mocha -R spec test"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/kidozen/node-salesforce-api.git"
+    },
+    "keywords": [
+        "kidozen",
+        "connector",
+        "salesforce"
+    ],
+    "license": "MIT",
+    "dependencies": {
+        "salesforce": "0.1.2",
+        "mem-cache" : "0.0.1"
+    },
+    "devDependencies": {
+        "mocha" : "1.11.0",
+        "assert": "0.4.9",
+        "nock"  : "0.18.2"
+    }
+}
