@@ -86,7 +86,7 @@ var Salesforce = function(config) {
     };
 
     this.upsertExternalObject = function(options, cb) {
-        invoke("upsertExternalObject", { objectClass: true, indexField: true, indexValue: true }, options, cb);
+        invoke("upsertExternalObject", { objectClass: true, data: true, indexField: true }, options, cb);
     };
 
     this.deleteExternalObject = function(options, cb) {

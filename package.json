@@ -1,6 +1,6 @@
 {
     "name": "salesforce-api",
-    "version": "0.0.1",
+    "version": "0.1.0",
     "description": "Module to invoke salesforce.com services",
     "author": "Kidozen <support@kidozen.com>",
     "contributors": [ 
