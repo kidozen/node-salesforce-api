@@ -24,18 +24,6 @@ function callback (err, data) {
 
 ### Authentication
 
-The module exports a Class and its constructor requires a configuration object with following properties
-
-* `username`: Required string. End-user’s username.
-* `password`: Required string. End-user’s password.
-
-```
-var SalesForce = require("salesforce-api");
-var salesforce = new SalesForce({
-        username: "account@kidozen.com",
-        password: "secret"
-    });
-```
 
 #### UserName and Password login
 
@@ -56,6 +44,10 @@ salesforce.authenticate({
 #### Username and Password Login (OAuth2 Resource Owner Password Credential)
 
 When OAuth2 client information is given to ctor. authenticate(username, password) uses OAuth2 Resource Owner Password Credential flow to login to Salesforce.
+
+* `username`: Required string. End-user’s username.
+* `password`: Required string. End-user’s password.
+* `oauth2`: Required. OAuth2 information
 
 ```
 var SalesForce = require("salesforce-api");
@@ -102,7 +94,7 @@ All public methods has the same signature, their have two arguments: `options` a
 * `options` must be an object instance containig all parameters for the method.
 * `callback` must be a function.
 
-#### describe(options, callback)
+#### Describe(options, callback)
 
 This method should be used to retrieve metadata for an object.
 
@@ -113,7 +105,7 @@ This method should be used to retrieve metadata for an object.
 
 
 ```
-salesforce.describe({ objectClass:"Account" }, function(err, result) {
+salesforce.Describe({ objectClass:"Account" }, function(err, result) {
 	if (err) return console.error (err);
 	console.log (result);
 });
