@@ -1,13 +1,17 @@
 {
     "name": "salesforce-api",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "description": "Module to invoke salesforce.com services",
     "author": "Kidozen <support@kidozen.com>",
     "contributors": [ 
         {
         "name": "Silvio Massari",
         "email": "silvio@kidozen.com"
-        } 
+        },
+        {
+        "name": "Christian Carnero",
+        "email": "chris@kidozen.com"
+        }  
     ],
     "main": "index.js",
     "scripts": {
@@ -24,8 +28,9 @@
     ],
     "license": "MIT",
     "dependencies": {
-        "salesforce": "0.1.2",
-        "mem-cache" : "0.0.1"
+        "node-salesforce": "0.6.3",
+        "mem-cache" : "0.0.1",
+        "node-uuid": "1.4.0"
     },
     "devDependencies": {
         "mocha" : "1.11.0",

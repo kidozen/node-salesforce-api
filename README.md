@@ -21,29 +21,81 @@ function callback (err, data) {
 } 
 ``` 
 
-### Constructor
+
+### Authentication
 
 The module exports a Class and its constructor requires a configuration object with following properties
 
-* `credential`: Required string.
 * `username`: Required string. End-user’s username.
 * `password`: Required string. End-user’s password.
-* `clientId`: Required string. The Consumer Key from the remote access application definition.
-* `clientSecret`: Required stringThe Consumer Secret from the remote access application definition.
-* `loginHost`: Optional string. Default value is 'login.salesforce.com'
-* `timeout`: Optional integer for the session timeout in milleseconds. Default 15 minutes.  
 
 ```
 var SalesForce = require("salesforce-api");
-var salesforce = new SendGrid({ 
-	credential: "...",
-	username: "...",
-	password: "...",
-	clientId: "...",
-	clientSecret: "...",
-	timeout: 5*60*1000	// Timeout of 5 minutes
-});
+var salesforce = new SalesForce({
+        username: "account@kidozen.com",
+        password: "secret"
+    });
 ```
+
+#### UserName and Password login
+
+The module exports a Class and its constructor requires a configuration object with following properties
+
+* `username`: Required string. End-user’s username.
+* `password`: Required string. End-user’s password.
+
+```
+var SalesForce = require("salesforce-api");
+var salesforce = new SalesForce();
+salesforce.authenticate({
+        username: "account@kidozen.com",
+        password: "secret"
+    }, ...
+```
+
+#### Username and Password Login (OAuth2 Resource Owner Password Credential)
+
+When OAuth2 client information is given to ctor. authenticate(username, password) uses OAuth2 Resource Owner Password Credential flow to login to Salesforce.
+
+```
+var SalesForce = require("salesforce-api");
+var salesforce = new SalesForce();
+salesforce.authenticate({
+        username: "account@kidozen.com",
+        password: "secret",
+        oauth2 : {
+            clientId : '...',
+            clientSecret : '...',
+            redirectUri : 'https://login.salesforce.com/services/oauth2/token'
+        }
+    }, ...
+
+```
+
+
+#### Access Token
+
+After the authenticate API call, you can get Salesforce access token and its instance URL. Next time you can use them to establish connection.
+
+```
+var OAUTH2SessionInfo = {
+      	instanceUrl : '<your Salesforce server URL (e.g. https://na1.salesforce.com) is here>',
+      	accessToken : '<your Salesforce session ID is here>'
+   		// you can find this values in the result of authenticate method
+    };
+
+var query = {
+    credentials : OAUTH2SessionInfo,
+    SOSQL: "SELECT Id from Account"
+};
+
+api.Query(query, function(err, result) {
+	...
+	...
+	...
+
+```
+
 
 ### Methods
 All public methods has the same signature, their have two arguments: `options` and `callback`.
@@ -67,262 +119,186 @@ salesforce.describe({ objectClass:"Account" }, function(err, result) {
 });
 ```
 
-#### queryObjects(options, callback)
+#### DescribeGlobal(options, callback)
+
+This method returns all SObject information registered in Salesforce
+
+**Parameters:**
+* `callback`: A required function for callback.
+
+
+```
+salesforce.DescribeGlobal(function(err, result) {
+	if (err) return console.error (err);
+	console.log (result);
+});
+```
+
+#### SOSQL Query(options, callback)
 
 Use this method to execute a SOQL query that returns all the results in a single response, or if needed, returns part of the results and an identifier used to retrieve the remaining results.
 
 **Parameters:**
 * `options`: A required object instance:
-	* `query`: Required string.
+	* `SOSQL`: Required string.
 * `callback`: A required function for callback.
 
 
 ```
-salesforce.query({ query: "SELECT Id, Name, BillingCity FROM Account" }, function(err, result) {
+salesforce.Query({ SOSQL: "SELECT Id, Name, BillingCity FROM Account" }, function(err, result) {
 	if (err) return console.error (err);
 	console.log (result);
 });
 ```
+#### Json Query(options, callback)
 
-#### searchObjects(options, callback)
-
-Use this method to execute a SOSL search.
+Use this method to execute a SOQL query that returns all the results in a single response, or if needed, returns part of the results and an identifier used to retrieve the remaining results.
 
 **Parameters:**
 * `options`: A required object instance:
-	* `query`: Required string.
+	* `Entity`: Required string.
+	* `Conditions`: Required string.
+	* `Fields`: Required string.
+	* `Options`: Required string.
 * `callback`: A required function for callback.
 
-The following example executes a SOSL search for {test}:
 
 ```
-salesforce.searchObjects({ query:"FIND {test}" }, function(err, result) {
+var query = {
+                Entity: "Account",
+                Conditions : { 
+                    Name : { $like : 'G%' }
+                },
+                Fields : {
+                    Id: 1,
+                    Name: 1,
+                    CreatedDate: 1 
+                },
+                Options : { 
+                    Limit : 5,
+                    Skip: 10
+                }
+            };
+salesforce.Query(query, function(err, result) {
 	if (err) return console.error (err);
 	console.log (result);
 });
 ```
 
-#### createObject(options, callback)
+
+#### Create(options, callback)
 
 This method allows you to create a new record. You have to supply the required field values of the resource.
 
 **Parameters:**
 * `options`: A required object instance:
-	* `objectClass`: Required string.
-	* `object`: Required object instance
+	* `Entity`: Required string.
+	* `Details`: Required object instance
 * `callback`: A required function for callback.
 
 The following example creates a new Account record:
 
 ```
 var newAccount = { Name: "Foo account" };
-salesforce.createObject({ objectClass: "Account",  object: newAccount }, function(err, result) {
+salesforce.Create({ Entity: "Account",  Details: newAccount }, function(err, result) {
 	if (err) return console.error (err);
 	console.log (result);
 });
 ```
 
-#### fetchObject(options, callback)
-
-This method should be used to retrieve an object by its ID.
-
-**Parameters:**
-* `options`: A required object instance:
-	* `objectClass`: Required string.
-	* `id`: Required string.
-	* `fields`: Optional. It could be a string containing field names separated by comma or an array of strings.
-* `callback`: A required function for callback.
-
-
-```
-var options = {
-	objectClass: "Account",
-	id: "CD656092",
-	fields: "AccountNumber,BillingPostalCode"
-};
-
-salesforce.fetchObject(options, function(err, result) {
-	if (err) return console.error (err);
-	console.log (result);
-});
-```
-
-
-#### updateObject(options, callback)
+#### Update(options, callback)
 
 Use this method to update records. Provide the updated record information at the `data` property.
 
 **Parameters:**
 * `options`: A required object instance:
-	* `objectClass`: Required string.
-	* `id`: Required string.
-	* `data`: Required object. Updated record.
+	* `Entity`: Required string.
+	* `Details`: Required object. Updated record. It must have the `id` property with the object id to update
 * `callback`: A required function for callback.
 
 In the following example, the Billing City within an Account is update.
 
 ```
 var options = {
-	objectClass: "Account",
-	id: "CD656092",
-	data: { BillingCity: "San Francisco" }
+	Entity: "Account",
+	Details : 
+		{
+			id: "CD656092",
+			BillingCity: "San Francisco" 
+		}
+	}
 };
 
-salesforce.updateObject(options, function(err, result) {
+salesforce.Update(options, function(err, result) {
 	if (err) return console.error (err);
 	console.log (result);
 });
 ```
 
-#### upsertObject(options, callback)
+#### Upsert(options, callback)
 
-You can use this method to create new records or update existing records (upsert) based on the value of a field.
+Will upsert a record or records given in first argument. External ID field name must be specified in second argument.
 
 **Parameters:**
 * `options`: A required object instance:
-	* `objectClass`: Required string.
-	* `id`: Required string.
-	* `data`: Required object. Updated record.
+	* `Entity`: Required string.
+	* `Details`: Required object. Updated record. It must have the `ExtId__c` property with the object id to update
+	* `ExternalIdName` the field id name
 * `callback`: A required function for callback.
 
 ```
 var options = {
-	objectClass: "Account",
-	indexField: "otherField"
-	data: { BillingCity: "San Francisco", otherField: "foo" }
+	Entity: "UpsertTable__c",
+	Details : 
+		{
+			Name : 'Record #1',
+  			ExtId__c : 'ID-0000001'
+  		},
+	ExternalIdName : 'ExtId__c'
+	}
 };
 
-salesforce.upsertObject(options, function(err, result) {
+salesforce.Upsert(options, function(err, result) {
 	if (err) return console.error (err);
 	console.log (result);
 });
 ```
 
-
-#### deleteObject(options, callback)
+#### Delete(options, callback)
 
 Use this method to delete an existing record.
 
 **Parameters:**
 * `options`: A required object instance:
-	* `objectClass`: Required string.
-	* `id`: Required string.
+	* `Entity`: Required string.
+	* `Details`: Required, string or array of strings with the ids to delete
 * `callback`: A required function for callback.
 
 In the following example removes the record the ID 1234 from Account
 
 ```
 var options = {
-	objectClass: "Account",
-	id: "1234"
+	Entity: "Account",
+	Details: "1234"
 };
 
-salesforce.deleteObject(options, function(err, result) {
+salesforce.Delete(options, function(err, result) {
 	if (err) return console.error (err);
 	console.log (result);
 });
 ```
-
-#### fetchExternalObject(options, callback)
-
-use this method to retrieve an object with a specific External ID
-
-**Parameters:**
-* `options`: A required object instance:
-	* `objectClass`: Required string.
-	* `indexField`: Required string.
-	* `indexValue`: Required string. 
-* `callback`: A required function for callback.
-
-The following example assumes there is a Merchandise__c custom object with a MerchandiseExtID__c external ID field.
+or
 
 ```
 var options = {
-	objectClass: "Merchandise__c",
-	indexField: "MerchandiseExtID__c",
-	indexValue: "1245"
+	Entity: "Account",
+	Details: ["1234","012"]
 };
 
-salesforce.fetchExternalObject(options, function(err, result) {
+salesforce.Delete(options, function(err, result) {
 	if (err) return console.error (err);
 	console.log (result);
 });
 ```
 
 
-#### updateExternalObject(options, callback)
-
-Updates an object by a specific External ID
-
-**Parameters:**
-* `options`: A required object instance:
-	* `objectClass`: Required string.
-	* `indexField`: Required string.
-	* `data`: Required object. Updated record.
-* `callback`: A required function for callback.
-
-In the following example, will update the Account record that contains the field fooExtID__c and its value is equal 1234
-
-```
-var options = {
-	objectClass: "Account",
-	indexField: "fooExtID__c",
-	data: { BillingCity: "San Francisco", fooExtID__c: 1234 }
-};
-
-salesforce.updateExternalObject(options, function(err, result) {
-	if (err) return console.error (err);
-	console.log (result);
-});
-```
-
-#### upsertExternalObject(options, callback)
-
-You can use this method to create new records or update existing records (upsert) based on the value of an External ID.
-
-**Parameters:**
-* `options`: A required object instance:
-	* `objectClass`: Required string.
-	* `indexField`: Required string.
-	* `data`: Required object.
-* `callback`: A required function for callback.
-
-```
-var options = {
-	objectClass: "Account",
-	indexField: "fooExtID__c",
-	data: { BillingCity: "San Francisco", fooExtID__c: 1234 }
-};
-
-salesforce.upsertExternalObject(options, function(err, result) {
-	if (err) return console.error (err);
-	console.log (result);
-});
-```
-
-
-#### deleteObject(options, callback)
-
-Use this method to delete an existing records by an External ID.
-
-**Parameters:**
-* `options`: A required object instance:
-	* `objectClass`: Required string.
-	* `indexField`: Required string.
-	* `indexValue`: Required.
-* `callback`: A required function for callback.
-
-In the following example removes the record the ID 1234 from Account
-
-```
-var options = {
-	objectClass: "Account",
-	indexField: "fooExtID__c",
-	indexValue: "1245"
-};
-
-salesforce.deleteExternalObject(options, function(err, result) {
-	if (err) return console.error (err);
-	console.log (result);
-});
-```
