@@ -4,6 +4,8 @@
 var SF      = require('node-salesforce');
 var Cache   = require("mem-cache");
 var uuid    = require("node-uuid");
+var request = require('request');
+var jwtflow = require('./jwtflow.js');
 
 var Salesforce = function(settings) {
     // Initialize members
@@ -23,8 +25,7 @@ var Salesforce = function(settings) {
     var cacheUser = new Cache(cacheOptions);
 
     this.authenticate = function (credentials, cb) {
-        // defaults for credentials
-        credentials = credentials || config;
+
         if (!cb && typeof credentials === 'function') {
             cb = credentials;
             credentials = config;
@@ -39,8 +40,44 @@ var Salesforce = function(settings) {
         var secret;
         var sfConnection = new SF.Connection(); 
 
+        if (credentials.useOAuthJwtFlow) {
+
+            if (!credentials.privateKey) {
+                cb(new Error('credentials.privateKey is required when using OAuth JWT Bearer Flow.'));
+                return;
+            };
+
+            if (!credentials.clientId) {
+                cb(new Error('credentials.clientId is required when using OAuth JWT Bearer Flow.'));
+                return;
+            };
+
+            if (!credentials.actAsUsername) {
+                cb(new Error('credentials.username is required when using OAuth JWT Bearer Flow.'));
+                return;
+            };
+
+            jwtflow(credentials.clientId, credentials.privateKey, credentials.actAsUsername, function(err, accessToken) {
+                if (err) {
+                    cb(err);
+                    return;
+                }
+
+                sfConnection = new SF.Connection();
+
+                sfConnection.initialize({
+                  instanceUrl: 'https://' + credentials.loginHost,
+                  accessToken: accessToken
+                });
+
+                cb(null, sfConnection);
+                return;
+            });
+
+            return;
+        };
+
         if (credentials.oauth2 && typeof credentials.oauth2 == 'object') {
-            if (typeof (credentials.oauth2.clientId) !== 'string') return cb(new Error("'oauth2.clientId' property is invalid."));
             if (typeof (credentials.oauth2.clientSecret) !== 'string') return cb(new Error("'oauth2.clientSecret' property is invalid."));
             sfConnection = new SF.Connection(credentials.oauth2); 
         }
@@ -59,6 +96,7 @@ var Salesforce = function(settings) {
         }
 
         sfConnection.login(account, secret, function(error, userInfo) {
+
             if (error) {
                 return cb(error,null);
             };
@@ -67,7 +105,7 @@ var Salesforce = function(settings) {
             var item = {
                 username: account,
                 password: secret,
-                connection  : sfConnection
+                connection: sfConnection
             };
 
             self.cacheAuth.set(auth, item);  
@@ -77,80 +115,97 @@ var Salesforce = function(settings) {
         });
     };
 
-    var getSFCnnFromCache = function (args, cb) {
-        if (args.credentials) {
-            if (args.credentials.instanceUrl)  return cb(null, new SF.Connection(args.credentials));
-        };          
-        self.authenticate(args.credentials, cb);
+    var getSFConnection = function (options, cb) {
+
+        // defaults for credentials
+        var credentials = options.credentials || config;
+        var metadata = options._kidozen || options.metadata;
+
+        if (metadata && metadata.userClaims) {
+            credentials.actAsUsername = (metadata.userClaims.filter(function(c) { 
+                return c.type == 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'; 
+            })[0] || {}).value;
+        }
+        self.authenticate(credentials, cb);
     };
 
     this.Query = function(options, cb) {
-        getSFCnnFromCache(options, function(err, item) {
+        getSFConnection(options, function(err, item) {
             if (options.SOSQL) {
                 item.query(options.SOSQL, function(err, result) {
                     return cb(err, result);
                 });
             };
             item.sobject(options.Entity)
-                .find(options.Conditions, options.Fields, options.Options, function(err, result) {
-                    return cb(err, result);
+            .find(options.Conditions, options.Fields, options.Options, function(err, result) {
+                return cb(err, result);
             });
         });
     };
 
     this.Describe = function(options, cb) {
-        getSFCnnFromCache(options, function(err, item) {
+        getSFConnection(options, function(err, item) {
+            if (err) { return cb(err); };
+
             item.sobject(options.objectClass).describe(function(err, result) {
-                    return cb(err, result);
+                return cb(err, result);
             });
         });
     };
 
     this.DescribeGlobal = function(cb) {
-        getSFCnnFromCache(options, function(err, item) {
+        getSFConnection(options, function(err, item) {
+            if (err) { return cb(err); };
+
             item.describeGlobal(function(err, result) {
-                    return cb(err, result);
+                return cb(err, result);
             });
         });
     };
 
     this.Create = function(options, cb) {
-        getSFCnnFromCache(options, function(err, item) {
+        getSFConnection(options, function(err, item) {
+            if (err) { return cb(err); };
+
             item.sobject(options.Entity)
-                .create(options.Details, function(err, result) {
-                    return cb(err, result);
+            .create(options.Details, function(err, result) {
+                return cb(err, result);
             });
         });
     };
 
     this.Update = function(options, cb) {
-        getSFCnnFromCache(options, function(err, item) {
+        getSFConnection(options, function(err, item) {
+            if (err) { return cb(err); };
+
             item.sobject(options.Entity)
-                .update(options.Details, function(err, result) {
-                    return cb(err, result);
+            .update(options.Details, function(err, result) {
+                return cb(err, result);
             });
         });
     };
 
     this.Upsert = function(options, cb) {
-        getSFCnnFromCache(options, function(err, item) {
+        getSFConnection(options, function(err, item) {
+            if (err) { return cb(err); };
+
             item.sobject(options.Entity)
-                .upsert(options.Details, options.ExternalIdName, function(err, result) {
-                    return cb(err, result);
+            .upsert(options.Details, options.ExternalIdName, function(err, result) {
+                return cb(err, result);
             });
         });
     };
 
     this.Delete = function(options, cb) {
-        getSFCnnFromCache(options, function(err, item) {
+        getSFConnection(options, function(err, item) {
+            if (err) { return cb(err); };
+
             item.sobject(options.Entity)
-                .destroy(options.Details, function(err, result) {
-                    return cb(err, result);
+            .destroy(options.Details, function(err, result) {
+                return cb(err, result);
             });
         });
     };
-
-
 };
 
 module.exports = Salesforce;
