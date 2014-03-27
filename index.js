@@ -122,10 +122,18 @@ var Salesforce = function(settings) {
         var metadata = options._kidozen || options.metadata;
 
         if (metadata && metadata.userClaims) {
+            var claimType = credentials.userNameClaimType || 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress';
+            
             credentials.actAsUsername = (metadata.userClaims.filter(function(c) { 
-                return c.type == credentials.userNameClaimType || 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'; 
+                return c.type == claimType; 
             })[0] || {}).value;
+
+            if (!credentials.actAsUsername) {
+                cb(new Error('Claim type "' + claimType + '" was not found in user claims.'));
+                return;
+            };
         }
+
         self.authenticate(credentials, cb);
     };
 
