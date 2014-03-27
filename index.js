@@ -123,7 +123,7 @@ var Salesforce = function(settings) {
 
         if (metadata && metadata.userClaims) {
             credentials.actAsUsername = (metadata.userClaims.filter(function(c) { 
-                return c.type == 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'; 
+                return c.type == credentials.userNameClaimType || 'http://schemas.xmlsoap.org/ws/2005/05/identity/claims/emailaddress'; 
             })[0] || {}).value;
         }
         self.authenticate(credentials, cb);
@@ -131,6 +131,8 @@ var Salesforce = function(settings) {
 
     this.Query = function(options, cb) {
         getSFConnection(options, function(err, item) {
+            if (err) { return cb(err); };
+
             if (options.SOSQL) {
                 item.query(options.SOSQL, function(err, result) {
                     return cb(err, result);
