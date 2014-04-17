@@ -12,6 +12,7 @@ var Salesforce = function(settings) {
     var self    = this;
     var config  = settings;
     var cacheTimeout =  (!settings || !settings.timeout ) ? 15 * 60 * 1000 : settings.timeout; // 15 minutes in milliseconds
+    var isSandbox = (config && config.isSandbox);
 
     var cacheOptions = {timeout: cacheTimeout};
 
@@ -38,7 +39,13 @@ var Salesforce = function(settings) {
 
         var account;
         var secret;
-        var sfConnection = new SF.Connection(); 
+        var sfConnection;
+
+        if (isSandbox) {
+            sfConnection = new SF.Connection({ loginUrl: 'https://test.salesforce.com' });
+        } else {
+            sfConnection = new SF.Connection();
+        }
 
         if (credentials.useOAuthJwtFlow) {
 
@@ -57,7 +64,7 @@ var Salesforce = function(settings) {
                 return;
             };
 
-            jwtflow(credentials.clientId, credentials.privateKey, credentials.actAsUsername, function(err, accessToken) {
+            jwtflow(credentials.clientId, credentials.privateKey, credentials.actAsUsername, isSandbox, function(err, accessToken) {
                 if (err) {
                     cb(err);
                     return;
@@ -79,7 +86,12 @@ var Salesforce = function(settings) {
 
         if (credentials.oauth2 && typeof credentials.oauth2 == 'object') {
             if (typeof (credentials.oauth2.clientSecret) !== 'string') return cb(new Error("'oauth2.clientSecret' property is invalid."));
-            sfConnection = new SF.Connection(credentials.oauth2); 
+            
+            if (isSandbox) {
+                sfConnection = new SF.Connection({ oauth2: credentials.oauth2, loginUrl: 'https://test.salesforce.com' });
+            } else {
+                sfConnection = new SF.Connection(credentials.oauth2);
+            }
         }
 
         // Validates user credentials

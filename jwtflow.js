@@ -1,10 +1,10 @@
 var request = require('request');
 var jwt = require('jsonwebtoken');
 
-module.exports = function (clientId, privateKey, userName, cb) {
+module.exports = function (clientId, privateKey, userName, sandbox, cb) {
+
 	var options = {
 		issuer: clientId,
-		audience: 'https://login.salesforce.com',
 		expiresInMinutes: 3,
 		algorithm:'RS256'
 	}
@@ -12,12 +12,19 @@ module.exports = function (clientId, privateKey, userName, cb) {
 	var token = jwt.sign({ prn: userName }, privateKey, options);
 
 	var post = {
-		uri: 'https://login.salesforce.com/services/oauth2/token',
 		form: {
 			'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
 			'assertion':  token
 		},
 		method: 'post'
+	}
+
+	if (sandbox) {
+		post.uri = 'https://test.salesforce.com/services/oauth2/token';
+		options.audience = 'https://test.salesforce.com';
+	} else {
+		post.uri = 'https://login.salesforce.com/services/oauth2/token';
+		options.audience =  'https://login.salesforce.com';
 	}
 
 	request(post, function(err, res, body) {

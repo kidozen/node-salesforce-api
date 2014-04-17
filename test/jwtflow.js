@@ -24,7 +24,7 @@ describe('salesforce', function(done) {
 				"access_token": sfAccessToken
 			});
 
-			jwtFlow(clientId, privateKey, username, function(err, accessToken) {
+			jwtFlow(clientId, privateKey, username, false, function(err, accessToken) {
 				assert.ifError(err);
 				assert.ok(accessToken);
 				assert.equal(sfAccessToken, accessToken)

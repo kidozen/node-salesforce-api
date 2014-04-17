@@ -402,6 +402,7 @@ describe("OAUTH2 Authentication", function() {
         
         var api = new API();
         api.Query(query, function(err, result){
+            assert.ifError(err);
             assert.ok(result);
             assert.equal(true,result.done);
             done();
