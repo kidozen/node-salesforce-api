@@ -6,7 +6,8 @@ module.exports = function (clientId, privateKey, userName, sandbox, cb) {
 	var options = {
 		issuer: clientId,
 		expiresInMinutes: 3,
-		algorithm:'RS256'
+		algorithm:'RS256',
+		audience: sandbox ? 'https://test.salesforce.com' : 'https://login.salesforce.com'
 	}
 
 	var token = jwt.sign({ prn: userName }, privateKey, options);
@@ -16,15 +17,8 @@ module.exports = function (clientId, privateKey, userName, sandbox, cb) {
 			'grant_type': 'urn:ietf:params:oauth:grant-type:jwt-bearer',
 			'assertion':  token
 		},
-		method: 'post'
-	}
-
-	if (sandbox) {
-		post.uri = 'https://test.salesforce.com/services/oauth2/token';
-		options.audience = 'https://test.salesforce.com';
-	} else {
-		post.uri = 'https://login.salesforce.com/services/oauth2/token';
-		options.audience =  'https://login.salesforce.com';
+		method: 'post',
+		uri: sandbox ? 'https://test.salesforce.com/services/oauth2/token' : 'https://login.salesforce.com/services/oauth2/token'
 	}
 
 	request(post, function(err, res, body) {
